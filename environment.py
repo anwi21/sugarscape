@@ -1,4 +1,5 @@
 import math
+import random
 
 class Environment:
     # Assumption: grid is always indexed by [width][height]
@@ -10,8 +11,8 @@ class Environment:
         self.equator = configuration["equator"] if configuration["equator"] >= 0 else math.ceil(self.height / 2)
         self.globalMaxSpice = configuration["globalMaxSpice"]
         self.globalMaxSugar = configuration["globalMaxSugar"]
-        self.inGroupAgeAbsoluteRanges = configuration["ageistAbsoluteRanges"]
-        self.inGroupAgeRelativeRange = configuration["ageistRelativeRange"]
+        self.inGroupAgeAbsoluteRanges = configuration.get("ageistAbsoluteRanges", [])
+        self.inGroupAgeRelativeRange = configuration.get("ageistRelativeRange", 0)
         self.inGroupRaces = configuration["inGroupRaces"]
         self.maxCombatLoot = configuration["maxCombatLoot"]
         self.neighborhoodMode = configuration["neighborhoodMode"]
@@ -66,8 +67,30 @@ class Environment:
                 cellMaxSugar = self.grid[i][j].maxSugar
                 cellMaxSpice = self.grid[i][j].maxSpice
                 cellSeason = self.grid[i][j].season
-                sugarRegrowth = min(cellCurrSugar + self.sugarRegrowRate, cellMaxSugar)
-                spiceRegrowth = min(cellCurrSpice + self.spiceRegrowRate, cellMaxSpice)
+                
+                #watercells:
+
+                # cellWaterMultiplier = 1 - self.grid[i][j].waterCapacity
+                # cellSugarRegrowthRate = self.sugarRegrowRate * cellWaterMultiplier
+                # cellSpiceRegrowthRate = self.spiceRegrowRate * cellWaterMultiplier
+
+                water_cap = self.grid[i][j].waterCapacity
+
+                if water_cap == 1.0:
+                    cellWaterMultiplier = 0
+                
+                elif water_cap == 0.5:
+                    cellWaterMultiplier = 2.0
+                
+                else:
+                    cellWaterMultiplier = 1.0
+                
+                cellSugarRegrowthRate = self.sugarRegrowRate * cellWaterMultiplier
+                cellSpiceRegrowthRate = self.spiceRegrowRate * cellWaterMultiplier
+                
+                sugarRegrowth = min(cellCurrSugar + cellSugarRegrowthRate, cellMaxSugar)
+                spiceRegrowth = min(cellCurrSpice + cellSpiceRegrowthRate, cellMaxSpice)
+                
                 self.grid[i][j].timestep = self.timestep
                 if self.seasonInterval > 0:
                     if self.timestep % self.seasonInterval == 0:

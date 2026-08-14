@@ -120,6 +120,10 @@ class Sugarscape:
                                                  }
             self.runtimeStats.update(self.groupInteractionRuntimeStats)
 
+    def addAgent(self, agent):
+        self.bornAgents.append(agent)
+        self.agents.append(agent)
+
     def __deepcopy__(self, memo):
         selfClass = self.__class__
         result = selfClass.__new__(selfClass)
@@ -157,16 +161,41 @@ class Sugarscape:
         radialDispersion = math.sqrt(max(startX, width - startX)**2 + max(startY, height - startY)**2) * (radius / width)
         for i in range(width):
             for j in range(height):
+                
+                #water
+
+                targetCell = self.environment.findCell(i,j)
+                RIVER_MAX_CAPACITY = 0
+                FLOODPLAIN_MAX_CAPACITY = 4
+
+                # if targetCell.waterCapacity == 1.0:
+                #     waterMultiplier = 0.15
+                # elif targetCell.waterCapacity == 0.5:
+                #     waterMultiplier = 0.5
+                # else:
+                #     waterMultiplier = 1.0
+
+                # if waterMultiplier <= 0:
+                #     continue
+
                 euclideanDistanceToStart = math.sqrt((startX - i)**2 + (startY - j)**2)
                 currDispersion = 1 + maxValue * (1 - euclideanDistanceToStart / radialDispersion)
                 cellMaxCapacity = min(currDispersion, maxValue)
                 cellMaxCapacity = math.ceil(cellMaxCapacity)
+
+                if targetCell.waterCapacity == 1.0:
+                    cellMaxCapacity = min(cellMaxCapacity, RIVER_MAX_CAPACITY)
+                elif targetCell.waterCapacity == 0.5:
+                    cellMaxCapacity = min(max(cellMaxCapacity, 2), FLOODPLAIN_MAX_CAPACITY)
+
                 if resource == "spice" and cellMaxCapacity > self.environment.findCell(i, j).maxSpice:
                     self.environment.findCell(i, j).maxSpice = cellMaxCapacity
                     self.environment.findCell(i, j).spice = cellMaxCapacity
                 elif resource == "sugar" and cellMaxCapacity > self.environment.findCell(i, j).maxSugar:
                     self.environment.findCell(i, j).maxSugar = cellMaxCapacity
                     self.environment.findCell(i, j).sugar = cellMaxCapacity
+
+                    
 
     def configureAgents(self, numAgents, editCell=None):
         if self.environment == None:
@@ -356,6 +385,7 @@ class Sugarscape:
             for i in range(width):
                 for j in range(height):
                     newCell = cell.Cell(i, j, self.environment)
+                    newCell.updateWaterCap()  
                     self.environment.setCell(newCell, i, j)
 
             sugarRadiusScale = 2
@@ -593,6 +623,7 @@ class Sugarscape:
         femaleFertilityAge = configs["agentFemaleFertilityAge"]
         femaleInfertilityAge = configs["agentFemaleInfertilityAge"]
         fertilityFactor = configs["agentFertilityFactor"]
+        follower = configs["agentLeader"]
         immuneSystemLength = configs["agentImmuneSystemLength"]
         inheritancePolicy = configs["agentInheritancePolicy"]
         lendingFactor = configs["agentLendingFactor"]
@@ -1004,6 +1035,11 @@ class Sugarscape:
         self.updateRuntimeStatsPerGroup()
 
     def updateRuntimeStatsPerGroup(self, group=None, notInGroup=False):
+        maxRace = 0
+        maxRaceSize = 0
+        maxTribe = 0
+        maxTribeSize = 0
+        maxWealth = 0
         meanAge = 0
         meanAgeismFactor = 0
         meanConflictHappiness = 0
@@ -1015,6 +1051,7 @@ class Sugarscape:
         meanRacismFactor = 0
         meanSelfishness = 0
         meanSexismFactor = 0
+        meanSelfishness = 0
         meanSocialHappiness = 0
         meanSpiceMetabolism = 0
         meanSugarMetabolism = 0
@@ -1118,7 +1155,7 @@ class Sugarscape:
             meanMovement += agent.movement
             meanVision += agent.vision
             meanAge += agent.age
-            meanAgeismFactor += agent.decisionModelAgeismFactor
+            meanAgeismFactor += getattr(agent, 'decisionModelAgeismFactor', 0) or 0
             meanWealth += agentWealth
             meanHappiness += agent.happiness
             meanRacismFactor += agent.decisionModelRacismFactor
@@ -1317,12 +1354,14 @@ class Sugarscape:
             sickAgentsPercentage = round((sickAgents / numAgents) * 100, 2)
             diseaseEffectiveReproductionRate = round(diseaseIncidence / len(infectors), 2) if len(infectors) > 0 else 0
             agentLastMoveOptimalityPercentage = round((agentLastMoveOptimalityPercentage / agentMoves) * 100, 2)
+            
             meanNeighbors = round(meanNeighbors / numAgents, 2)
             meanControlNeighbors = round(meanControlNeighbors / numAgents, 2)
             meanExperimentalNeighbors = round(meanExperimentalNeighbors / numAgents, 2)
             meanValidMoves = round(meanValidMoves / numAgents, 2)
             meanMoveRank = round(meanMoveRank / numAgents, 2)
             meanMoveDifferenceFromOptimal = round(meanMoveDifferenceFromOptimal / meanNeighbors, 2) if meanNeighbors > 0 else 0
+            
         else:
             agentMeanTimeToLive = 0
             agentWealthBurnRate = 0
@@ -1795,6 +1834,9 @@ def verifyConfiguration(configuration):
     if configuration["agentLogfile"] == "":
         configuration["agentLogfile"] = None
 
+    if configuration["seed"] == -1:
+        configuration["seed"] = random.randrange(sys.maxsize)
+
     recognizedDebugModes = ["agent", "all", "cell", "disease", "environment", "ethics", "none", "sugarscape"]
     validModes = True
     for mode in configuration["debugMode"]:
@@ -1919,6 +1961,10 @@ if __name__ == "__main__":
                      "environmentPollutionDiffusionTimeframe": [0, 0],
                      "environmentPollutionTimeframe": [0, 0],
                      "environmentQuadrantSizeFactor": 1,
+                     "environmentRiverLocation": 30,
+                     "environmentRiverOrientation": "vertical",
+                     "environmentRiverWidthWet": 4,
+                     "environmentRiverWidthDry": 2,
                      "environmentSeasonalGrowbackDelay": 0,
                      "environmentSeasonInterval": 0,
                      "environmentSexistGroups": [],
@@ -1934,6 +1980,8 @@ if __name__ == "__main__":
                      "environmentTribePerQuadrant": False,
                      "environmentUniversalSpiceIncomeInterval": 0,
                      "environmentUniversalSugarIncomeInterval": 0,
+                     "environmentWaterPollutionFlow": True,
+                     "environmentWaterPollutionFlowRate": 0.5,
                      "environmentWidth": 50,
                      "environmentWraparound": True,
                      "experimentalGroup": None,
@@ -1958,6 +2006,7 @@ if __name__ == "__main__":
     configuration = verifyConfiguration(configuration)
     if configuration["headlessMode"] == False:
         import gui
+    random.seed(configuration["seed"])
     S = Sugarscape(configuration)
     if configuration["profileMode"] == True:
         import cProfile

@@ -1,12 +1,15 @@
 import math
 
 class Cell:
-    def __init__(self, x, y, environment, maxSugar=0, maxSpice=0, growbackRate=0):
+    def __init__(self, x, y, environment, maxSugar=0, maxSpice=0, growbackRate=0, waterCapacity = 0.0):
         self.x = x
         self.y = y
         self.environment = environment
         self.maxSugar = maxSugar
         self.maxSpice = maxSpice
+
+        #waterrr
+        self.waterCapacity = float(waterCapacity)
 
         self.agent = None
         self.hemisphere = "north" if self.x >= self.environment.equator else "south"
@@ -43,6 +46,18 @@ class Cell:
         if self.isPollutionEnabled() == True:
             productionPollutionFactor = self.environment.sugarProductionPollutionFactor
             self.pollution += productionPollutionFactor * sugarProduced
+
+    def findDistToRiver(self):
+        config = self.environment.sugarscape.configuration
+        orientation = config.get("environmentRiverOrientation", "vertical")
+        location = config.get("environmentRiverLocation", 30)
+
+        riverCenter = location - 0.5
+
+        if orientation == "horizontal":
+            return abs(self.y - location)
+        else:
+            return abs(self.x - location)
 
     def findEastNeighbor(self):
         if self.environment.wraparound == False and self.x + 1 > self.environment.width - 1:
@@ -102,10 +117,33 @@ class Cell:
         return northNeighbor
 
     def findPollutionFlux(self):
+
+        config = self.environment.sugarscape.configuration
+        waterPolFlow = config.get("environmentWaterPollutionFlow", True)
+
+        if waterPolFlow and getattr(self, 'waterCapacity', 0.0) == 1.0:
+            orientation = config.get("environmentRiverOrientation", "horizontal")
+            flowRate = config.get("environmentWaterPollutionFlowRate", 0.5)
+
+            if orientation == "vertical":
+                upstreamKey = "north"
+            else:
+                upstreamKey = "west"
+
+            upstreamCell = self.neighbors.get(upstreamKey) 
+
+            if upstreamCell is not None:
+
+                ambientDiffusion = sum(n.pollution for n in self.neighbors.values()) / len(self.neighbors) if self.neighbors else 0.0      
+
+                self.pollutionFlux = (flowRate * upstreamCell.pollution) + ((1.0 - flowRate) * ambientDiffusion)
+                return
+
         meanPollution = 0
         for neighbor in self.neighbors.values():
             meanPollution += neighbor.pollution
-        meanPollution = meanPollution / (len(self.neighbors))
+        if len(self.neighbors) > 0:
+            meanPollution = meanPollution / (len(self.neighbors))
         self.pollutionFlux = meanPollution
 
     def findSouthNeighbor(self):
@@ -140,6 +178,28 @@ class Cell:
             self.season = "dry"
         else:
             self.season = "wet"
+
+        self.updateWaterCap()
+
+    def updateWaterCap(self):
+        config = self.environment.sugarscape.configuration
+
+        if getattr(self, 'season', 'wet') == "wet" or getattr(self, 'season', None) is None:
+            riverWidth = config.get("environmentRiverWidthWet", 4)
+        else:
+            riverWidth = config.get("environmentRiverWidthDry", 2)
+
+        floodPlainWidth = riverWidth * 0.5
+        halfWidth = riverWidth * 0.5
+
+        dist = self.findDistToRiver()
+
+        if dist < halfWidth:
+            self.waterCapacity = 1.0
+        elif dist < (halfWidth + floodPlainWidth):
+            self.waterCapacity = 0.5
+        else:
+            self.waterCapacity = 0.0
 
     def __str__(self):
         string = ""
