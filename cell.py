@@ -51,15 +51,21 @@ class Cell:
         config = self.environment.sugarscape.configuration
         orientation = config.get("environmentRiverOrientation", "vertical")
         location = config.get("environmentRiverLocation", 30)
+        slope = config.get("environmentRiverSlope", 1.0)
 
         riverCenter = location - 0.5
 
         if orientation == "horizontal":
             return abs(self.y - riverCenter)
-        elif orientation == "diagonal":
-            return abs(self.x-self.y) / math.sqrt(2)
-        else:
+        elif orientation == "vertical":
             return abs(self.x - riverCenter)
+        else:
+            m = slope
+            intercept = riverCenter
+            # Distance to line: m*(x - intercept) - y = 0
+            numerator = abs(m * (self.x - intercept) - self.y)
+            return numerator / math.sqrt(m ** 2 + 1)
+        
 
     def findEastNeighbor(self):
         if self.environment.wraparound == False and self.x + 1 > self.environment.width - 1:
@@ -186,7 +192,7 @@ class Cell:
     def updateWaterCap(self):
         config = self.environment.sugarscape.configuration
 
-        currSeason = getattr(self.environment, 'season', None)
+        currSeason = getattr(self, 'season', None)
 
         if currSeason == "dry":
             riverWidth = config.get("environmentRiverWidthDry", 2)

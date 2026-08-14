@@ -201,6 +201,39 @@ class Environment:
             delta = border - delta
         return delta
 
+    def getWaterFlowVector(self):
+        config = self.sugarscape.configuration
+        orientation = config.get("environmentRiverOrientation", "horizontal")
+        flowDir = config.get("environmentRiverFlowDirection", "left-to-right")
+        slope = config.get("environmentRiverSlope", 0)
+
+        dx = -1 if flowDir == "right-to-left" else 1
+        
+        if orientation == "horizontal":
+            return (dx,0)
+        
+        elif orientation == "vertical":
+            dy = -1 if flowDir == "bottom-to-top" else 1
+            return (0,dy)
+
+        elif orientation == "diagonal":
+            # diagonal flows like verticals
+            # slope determines left-to-right/right-to-left
+            # configuration determines top-to-bottom/bottom-to-top
+
+            if flowDir == "top-to-bottom":
+                dy = 1
+                dx = int(dy / slope) if slope != 0 else 1
+
+            else:
+                dy = -1
+                dx = int(dy / slope) if slope != 0 else -1
+
+            return (dx, dy)
+
+        
+        return (0,0)
+
     def resetCell(self, x, y):
         self.grid[x][y] = None
 
@@ -232,6 +265,7 @@ class Environment:
                 else:
                     self.seasonNorth = "wet"
                     self.seasonSouth = "dry"
+        
 
     def __str__(self):
         string = ""

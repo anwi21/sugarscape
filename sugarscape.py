@@ -47,7 +47,15 @@ class Sugarscape:
                                     "sugarscapeSeed": configuration["seed"],
                                     "universalSpiceIncomeInterval": configuration["environmentUniversalSpiceIncomeInterval"],
                                     "universalSugarIncomeInterval": configuration["environmentUniversalSugarIncomeInterval"],
-                                    "wraparound": configuration["environmentWraparound"]}
+                                    "wraparound": configuration["environmentWraparound"],
+                                    "environmentRiverOrientation": configuration["environmentRiverOrientation"],
+                                    "environmentRiverLocation": configuration["environmentRiverLocation"],
+                                    "environmentRiverSlope": configuration["environmentRiverSlope"],
+                                    "environmentRiverFlowDirection": configuration["environmentRiverFlowDirection"],
+                                    "environmentRiverWidthWet": configuration["environmentRiverWidthWet"],
+                                    "environmentRiverWidthDry": configuration["environmentRiverWidthDry"],
+                                    "environmentWaterPollutionFlow": configuration["environmentWaterPollutionFlow"],
+                                    "environmentWaterPollutionFlowRate": configuration["environmentWaterPollutionFlowRate"]}
         self.seed = configuration["seed"]
         self.environment = environment.Environment(configuration["environmentHeight"], configuration["environmentWidth"], self, environmentConfiguration)
         self.environmentHeight = configuration["environmentHeight"]
@@ -384,9 +392,9 @@ class Sugarscape:
         if environmentFile == None:
             for i in range(width):
                 for j in range(height):
-                    newCell = cell.Cell(i, j, self.environment)
-                    newCell.updateWaterCap()  
+                    newCell = cell.Cell(i, j, self.environment)  
                     self.environment.setCell(newCell, i, j)
+                    newCell.updateWaterCap()
 
             sugarRadiusScale = 2
             radius = math.ceil(math.sqrt(sugarRadiusScale * (height + width)))
@@ -1575,6 +1583,7 @@ def verifyConfiguration(configuration):
     negativesAllowed += ["diseaseSpiceMetabolismPenalty", "diseaseSugarMetabolismPenalty", "diseaseTimeframe", "diseaseVisionPenalty"]
     negativesAllowed += ["environmentAgeistAbsoluteRanges", "environmentAgeistRelativeRange", "environmentEquator", "environmentPollutionDiffusionTimeframe", "environmentPollutionTimeframe", "environmentMaxSpice", "environmentMaxSugar"]
     negativesAllowed += ["interfaceHeight", "interfaceWidth", "seed", "timesteps"]
+    negativesAllowed += ["environmentRiverSlope"]
     timeframes = ["diseaseTimeframe", "environmentPollutionDiffusionTimeframe", "environmentPollutionTimeframe"]
     negativeFlag = 0
     for configName, configValue in configuration.items():
@@ -1961,12 +1970,16 @@ if __name__ == "__main__":
                      "environmentPollutionDiffusionTimeframe": [0, 0],
                      "environmentPollutionTimeframe": [0, 0],
                      "environmentQuadrantSizeFactor": 1,
-                     "environmentRiverLocation": 0,
+                     "environmentRiverLocation": 30,
                      "environmentRiverOrientation": "diagonal",
                      "environmentRiverWidthWet": 4,
                      "environmentRiverWidthDry": 2,
+                     "environmentRiverSlope": -3.0,
+                     "environmentRiverFlowDirection": "top-to-bottom",
+                     "environmentWaterPollutionFlow": True,
+                     "environmentWaterPollutionFlowRate": 0.5,
                      "environmentSeasonalGrowbackDelay": 0,
-                     "environmentSeasonInterval": 0,
+                     "environmentSeasonInterval": 2,
                      "environmentSexistGroups": [],
                      "environmentSpiceConsumptionPollutionFactor": 0,
                      "environmentSpicePeaks": [[35, 35, 4], [15, 15, 4]],
