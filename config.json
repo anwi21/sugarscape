@@ -89,8 +89,8 @@
         "environmentPollutionDiffusionTimeframe": [0, 0],
         "environmentPollutionTimeframe": [0, 0],
         "environmentQuadrantSizeFactor": 1,
-        "environmentSeasonalGrowbackDelay": 0,
-        "environmentSeasonInterval": 0,
+        "environmentSeasonalGrowbackDelay": 2,
+        "environmentSeasonInterval": 50,
         "environmentSexistGroups": ["female", "male"],
         "environmentSpiceConsumptionPollutionFactor": 0,
         "environmentSpicePeaks": [[15, 15, 4], [35, 35, 4]],
@@ -121,6 +121,6 @@
         "startingAgents": 250,
         "startingDiseases": 50,
         "startingDiseasesPerAgent": [0, 0],
-        "timesteps": 1000
+        "timesteps": 500
     }
 }
