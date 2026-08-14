@@ -74,12 +74,12 @@ class Environment:
                 # cellSugarRegrowthRate = self.sugarRegrowRate * cellWaterMultiplier
                 # cellSpiceRegrowthRate = self.spiceRegrowRate * cellWaterMultiplier
 
-                water_cap = self.grid[i][j].waterCapacity
+                waterCap = self.grid[i][j].waterCapacity
 
-                if water_cap == 1.0:
+                if waterCap == 1.0:
                     cellWaterMultiplier = 0
                 
-                elif water_cap == 0.5:
+                elif waterCap == 0.5:
                     cellWaterMultiplier = 2.0
                 
                 else:

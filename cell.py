@@ -55,9 +55,11 @@ class Cell:
         riverCenter = location - 0.5
 
         if orientation == "horizontal":
-            return abs(self.y - location)
+            return abs(self.y - riverCenter)
+        elif orientation == "diagonal":
+            return abs(self.x-self.y) / math.sqrt(2)
         else:
-            return abs(self.x - location)
+            return abs(self.x - riverCenter)
 
     def findEastNeighbor(self):
         if self.environment.wraparound == False and self.x + 1 > self.environment.width - 1:
@@ -184,10 +186,12 @@ class Cell:
     def updateWaterCap(self):
         config = self.environment.sugarscape.configuration
 
-        if getattr(self, 'season', 'wet') == "wet" or getattr(self, 'season', None) is None:
-            riverWidth = config.get("environmentRiverWidthWet", 4)
-        else:
+        currSeason = getattr(self.environment, 'season', None)
+
+        if currSeason == "dry":
             riverWidth = config.get("environmentRiverWidthDry", 2)
+        else:
+            riverWidth = config.get("environmentRiverWidthWet", 4)
 
         floodPlainWidth = riverWidth * 0.5
         halfWidth = riverWidth * 0.5
