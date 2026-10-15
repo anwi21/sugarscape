@@ -51,25 +51,11 @@ class Cell:
     # Help river configuration, by adjusting river capacity based on dist to the river center
     def findDistToRiver(self):
         config = self.environment.sugarscape.configuration
-        riverOrient = config.get("environmentRiverOrientation", "vertical")
-        orientation= riverOrient.lower()
-        location = config.get("environmentRiverLocation", 30)
-        slope = config.get("environmentRiverSlope", 0.0)
-
-        riverCenter = location - 0.5
-
-        # River orientation based on configuration
-        if orientation == "horizontal":
-            return abs(self.y - riverCenter)
-        elif orientation == "vertical":
-            return abs(self.x - riverCenter)
-
-        # Diagonal river is based on the configured slope
-        else:
-            m = slope
-            b = riverCenter
-            numerator = abs(m * self.x - self.y + b)
-            return numerator / math.sqrt(m ** 2 + 1)
+        riverCoordinates = config.get("environmentRiverCoordinates", [])
+        if not riverCoordinates:
+            return math.inf
+        closestDistance = min(math.hypot(self.x - rx, self.y - ry) for rx, ry in riverCoordinates)
+        return closestDistance
         
 
     def findEastNeighbor(self):

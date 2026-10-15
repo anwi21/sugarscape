@@ -48,12 +48,9 @@ class Sugarscape:
                                     "universalSpiceIncomeInterval": configuration["environmentUniversalSpiceIncomeInterval"],
                                     "universalSugarIncomeInterval": configuration["environmentUniversalSugarIncomeInterval"],
                                     "wraparound": configuration["environmentWraparound"],
-                                    "environmentRiverOrientation": configuration["environmentRiverOrientation"],
-                                    "environmentRiverLocation": configuration["environmentRiverLocation"],
-                                    "environmentRiverSlope": configuration["environmentRiverSlope"],
-                                    "environmentRiverFlowDirection": configuration["environmentRiverFlowDirection"],
                                     "environmentRiverWidthWet": configuration["environmentRiverWidthWet"],
                                     "environmentRiverWidthDry": configuration["environmentRiverWidthDry"],
+                                    "environmentRiverCoordinates": configuration["environmentRiverCoordinates"],
                                     "environmentWaterPollutionFlow": configuration["environmentWaterPollutionFlow"],
                                     "environmentWaterPollutionFlowRate": configuration["environmentWaterPollutionFlowRate"]}
         self.seed = configuration["seed"]
@@ -1579,7 +1576,6 @@ def verifyConfiguration(configuration):
     negativesAllowed += ["diseaseSpiceMetabolismPenalty", "diseaseSugarMetabolismPenalty", "diseaseTimeframe", "diseaseVisionPenalty"]
     negativesAllowed += ["environmentAgeistAbsoluteRanges", "environmentAgeistRelativeRange", "environmentEquator", "environmentPollutionDiffusionTimeframe", "environmentPollutionTimeframe", "environmentMaxSpice", "environmentMaxSugar"]
     negativesAllowed += ["interfaceHeight", "interfaceWidth", "seed", "timesteps"]
-    negativesAllowed += ["environmentRiverSlope"]
     timeframes = ["diseaseTimeframe", "environmentPollutionDiffusionTimeframe", "environmentPollutionTimeframe"]
     negativeFlag = 0
     for configName, configValue in configuration.items():
@@ -1654,11 +1650,6 @@ def verifyConfiguration(configuration):
         if "all" in configuration["debugMode"] or "environment" in configuration["debugMode"]:
             print(f"Cannot have a quadrant size factor of {configuration['environmentQuadrantSizeFactor']}. Setting quadrant size factor to 1.")
         configuration["environmentQuadrantSizeFactor"] = 1
-
-    # Validating River Orientation
-    if configuration["environmentRiverOrientation"] not in orientationAllowed:
-        if "all" in configuration["debugMode"] or "environment" in configuration["debugMode"]:
-                    print(f"Cannot have a river orientation that is not either diagonal, horizontal or vertical.")
 
     if len(configuration["environmentStartingQuadrants"]) == 0:
         configuration["environmentStartingQuadrants"] = [1, 2, 3, 4]
@@ -1971,12 +1962,9 @@ if __name__ == "__main__":
                      "environmentPollutionDiffusionTimeframe": [0, 0],
                      "environmentPollutionTimeframe": [0, 0],
                      "environmentQuadrantSizeFactor": 1,
-                     "environmentRiverLocation": 25,
-                     "environmentRiverOrientation": "diagonal",
                      "environmentRiverWidthWet": 4,
                      "environmentRiverWidthDry": 2,
-                     "environmentRiverSlope": 0.5,
-                     "environmentRiverFlowDirection": "left-to-right",
+                     "environmentRiverCoordinates": [[0, 25], [50, 25]],
                      "environmentWaterPollutionFlow": True,
                      "environmentWaterPollutionFlowRate": 0.5,
                      "environmentSeasonalGrowbackDelay": 0,

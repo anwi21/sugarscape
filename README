@@ -471,15 +471,6 @@ environmentQuadrantSizeFactor: float
     Set the proportion of each corner of the screen taken up by the agents' starting quadrants.
     Default: 1
 
-environmentRiverLocation: int
-    Set the intercept (horizontal/diagonal : y-intercept, vetical: x-intercept (on top)) on the grid for the river to be on. 
-    Default: 25
-
-environmentRiverOrientation: string
-    Set the orientation of the river.
-    Options: "horizontal", "vertical", "diagonal"
-    Default: horizontal
-
 environmentRiverWidthWet: int
     Set the maximum width of the river when it is in the wet or default season.
     Default: 4
@@ -488,15 +479,9 @@ environmentRiverWidthDry: int
     Set the width of the river when it is in the dry season.
     Default: 2
 
-environmentRiverSlope: float
-    Set slope of the diagonally oriented river.
-    Note: This configuration only affects diagonally oriented rivers.
-    Default: 0.5
-
-environmentRiverFlowDirection: string
-    Set the flow direction of the river which affects pollution direction.
-    Note: In case of vertical river, "left-to-right" and "right-to-left" translate to "top-to-bottom" and "bottom-to-top" respectively.
-    Default: left-to-right
+environmentRiverCoordinates: [[int, int], [int, int], ...]
+    Set the series of points that the river will follow in order of river flow direction
+    Default: [[0, 25], [50, 25]]
 
 environmentWaterPollutionFlow: bool
     Set the water pollution flow to be on or off.
