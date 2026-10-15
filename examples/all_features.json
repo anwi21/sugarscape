@@ -45,7 +45,6 @@
     "agentUniversalSugar": [1, 1],
     "agentVision": [1, 6],
     "agentVisionMode": "cardinal",
-    "ageistAbsoluteRanges": [],
     "debugMode": ["none"],
     "diseaseAggressionPenalty": [-1, 1],
     "diseaseFertilityPenalty": [-1, 1],
@@ -72,7 +71,7 @@
     "environmentPollutionDiffusionDelay": 2,
     "environmentPollutionTimeframe": [100, -1],
     "environmentQuadrantSizeFactor": 1,
-    "environmentSeasonalGrowbackDelay": 1,
+    "environmentSeasonalGrowbackDelay": 2,
     "environmentSeasonInterval": 50,
     "environmentSexistGroups": ["female", "male"],
     "environmentSpiceConsumptionPollutionFactor": 1,
@@ -91,9 +90,9 @@
     "environmentWraparound": true,
     "experimentalGroup": "depressed",
     "neighborhoodMode": "vonNeumann",
-    "seed": 12223,
+    "seed": 12345,
     "startingAgents": 500,
     "startingDiseases": 50,
-    "timesteps": 6000,
+    "timesteps": 500,
     "test": 1
 }
