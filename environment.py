@@ -144,6 +144,28 @@ class Environment:
     def findCell(self, x, y):
         return self.grid[x][y]
 
+    def findCellAtDistance(self, origin, cell, distance):
+        deltaX = cell.x - origin.x
+        deltaY = cell.y - origin.y
+        # Radial movement
+        if deltaX != 0 and deltaY != 0:
+            #todo
+            return None
+        stepX = self.findWraparoundStep(deltaX, self.width)
+        stepY = self.findWraparoundStep(deltaY, self.height)
+        newX = (origin.x + stepX * distance) % self.width
+        newY = (origin.y + stepY * distance) % self.height
+        return self.grid[newX][newY]
+
+    def findWraparoundStep(self, delta, border):
+        if delta == 0:
+            return 0
+        step = 1 if delta > 0 else -1
+        # Shorter path by wrapping
+        if self.wraparound == True and abs(delta) > border / 2:
+            step = -step
+        return step
+
     def findCellNeighbors(self):
         for i in range(self.width):
             for j in range(self.height):

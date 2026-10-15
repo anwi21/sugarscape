@@ -1434,12 +1434,13 @@ class Agent:
 
             #watercost
 
-            waterCap = getattr(cell, 'waterCapacity', 0.0)
-            
-            if waterCap == 1.0:
-                effectiveDistance = travelDistance * 2.0
-            else:
-                effectiveDistance = travelDistance
+            riverCost = 0.0
+            for i in range(1, travelDistance + 1):
+                intermediateCell = self.cell.environment.findCellAtDistance(self.cell, cell, i)
+                if getattr(intermediateCell, 'waterCapacity', 0.0) == 1.0:
+                    riverCost += 1.0
+
+            effectiveDistance = travelDistance + riverCost
             
             if effectiveDistance > self.findMovement():
                 continue
