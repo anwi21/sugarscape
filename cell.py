@@ -54,7 +54,19 @@ class Cell:
         riverCoordinates = config.get("environmentRiverCoordinates", [])
         if not riverCoordinates:
             return math.inf
-        closestDistance = min(math.hypot(self.x - rx, self.y - ry) for rx, ry in riverCoordinates)
+        closestDistance = math.inf
+        for (x1, y1), (x2, y2) in zip(riverCoordinates, riverCoordinates[1:]):
+            dx = x2 - x1
+            dy = y2 - y1
+            px = self.x
+            py = self.y
+            # Project point onto the line segment
+            t = max(0, min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)))
+            closestX = x1 + t * dx
+            closestY = y1 + t * dy
+            distance = math.hypot(px - closestX, py - closestY)
+            if distance < closestDistance:
+                closestDistance = distance
         return closestDistance
         
 
