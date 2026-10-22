@@ -1368,6 +1368,7 @@ class Sugarscape:
         else:
             agentMeanTimeToLive = 0
             agentWealthBurnRate = 0
+            loanVolume = 0
             maxRace = 0
             maxTribe = 0
             maxWealth = 0
@@ -1789,11 +1790,9 @@ def verifyConfiguration(configuration):
     numUniqueAgentDecisionModels = len(uniqueAgentDecisionModels)
     if numUniqueAgentDecisionModels > maxColors:
         if "all" in configuration["debugMode"] or "agent" in configuration["debugMode"]:
-            print(
-                f"Cannot provide {len(configuration['agentDecisionModels'])} decision models. Allocating maximum of {maxColors}.")
+            print(f"Cannot provide {len(configuration['agentDecisionModels'])} decision models. Allocating maximum of {maxColors}.")
         removeDecisionModels = uniqueAgentDecisionModels[maxColors:]
-        configuration["agentDecisionModels"] = [i for i in configuration["agentDecisionModels"] if
-                                                i not in removeDecisionModels]
+        configuration["agentDecisionModels"] = [i for i in configuration["agentDecisionModels"] if i not in removeDecisionModels]
     if configuration["environmentMaxRaces"] > maxColors:
         if "all" in configuration["debugMode"] or "sugarscape" in configuration["debugMode"] or "environment" in configuration["debugMode"]:
             print(f"Cannot provide {configuration['environmentMaxRaces']} races. Allocating maximum of {maxColors}.")

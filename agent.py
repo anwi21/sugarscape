@@ -153,7 +153,7 @@ class Agent:
         agentID = agent.ID
         if agentID in self.socialNetwork:
             return
-        self.socialNetwork[agentID] = {"agent": agent, "lastSeen": self.lastMovedTimestep, "timesVisited": 1, "timesReproduced": 0,
+        self.socialNetwork[agentID] = {"lastSeen": self.lastMovedTimestep, "timesVisited": 1, "timesReproduced": 0,
                                          "timesTraded": 0, "timesLoaned": 0, "marginalRateOfSubstitution": 0}
         
         if self.decisionModel == "temperance":
@@ -191,7 +191,7 @@ class Agent:
         if agentID not in self.socialNetwork:
             self.addAgentToSocialNetwork(agent)
         self.socialNetwork[agentID]["timesLoaned"] += 1
-        loan = {"creditor": agentID, "debtor": self.ID, "sugarLoan": sugarLoan, "spiceLoan": spiceLoan, "loanDuration": duration,
+        loan = {"creditor": agent, "debtor": self, "sugarLoan": sugarLoan, "spiceLoan": spiceLoan, "loanDuration": duration,
                 "loanOrigin": timestep}
         self.socialNetwork["creditors"].append(loan)
 
@@ -201,7 +201,7 @@ class Agent:
             self.addAgentToSocialNetwork(agent)
         self.socialNetwork[agentID]["timesLoaned"] += 1
         agent.addLoanFromAgent(self, timestep, sugarLoan, spiceLoan, duration)
-        loan = {"creditor": self.ID, "debtor": agentID, "sugarLoan": sugarLoan, "spiceLoan": spiceLoan, "loanDuration": duration,
+        loan = {"creditor": self, "debtor": agent, "sugarLoan": sugarLoan, "spiceLoan": spiceLoan, "loanDuration": duration,
                 "loanOrigin": timestep}
         self.socialNetwork["debtors"].append(loan)
         self.sugar -= sugarPrincipal
@@ -304,6 +304,7 @@ class Agent:
         self.resetCell()
         self.doInheritance()
 
+        self.movementNeighborhood = []
         self.neighbors = []
         self.neighborhood = []
         self.movementNeighborhood = []
@@ -344,7 +345,7 @@ class Agent:
         neighbors = []
         for neighborCell in neighborCells:
             neighbor = neighborCell.agent
-            if neighbor != None and neighbor.isAlive() == True:
+            if neighbor != None and self.isSocialNetworkEntryAlive(neighbor) == True:
                 neighbors.append(neighbor)
         diseasesSpread = 0
         random.shuffle(neighbors)
@@ -441,7 +442,7 @@ class Agent:
         neighbors = self.cell.findNeighborAgents()
         borrowers = []
         for neighbor in neighbors:
-            if neighbor.isAlive() == False:
+            if self.isSocialNetworkEntryAlive(neighbor) == False:
                 continue
             elif neighbor.isBorrower() == True:
                 borrowers.append(neighbor)
@@ -510,7 +511,7 @@ class Agent:
         mates = []
         for neighborCell in neighborCells:
             neighbor = neighborCell.agent
-            if neighbor != None and neighbor.isAlive() == True:
+            if neighbor != None and self.isSocialNetworkEntryAlive(neighbor) == True:
                 neighborCompatibility = self.isNeighborReproductionCompatible(neighbor)
                 emptyCellsWithNeighbor = emptyCells + neighbor.findEmptyNeighborCells()
                 random.shuffle(emptyCellsWithNeighbor)
@@ -615,7 +616,7 @@ class Agent:
         potentialTraders = []
         for neighborCell in neighborCells:
             neighbor = neighborCell.agent
-            if neighbor != None and neighbor.isAlive() == True:
+            if neighbor != None and self.isSocialNetworkEntryAlive(neighbor) == True:
                 neighborMRS = neighbor.marginalRateOfSubstitution
                 if neighborMRS != self.marginalRateOfSubstitution:
                     potentialTraders.append(neighbor)
@@ -1047,7 +1048,7 @@ class Agent:
         neighborhood = []
         for neighborCell in newNeighborhood.keys():
             neighbor = neighborCell.agent
-            if neighbor != None and neighbor.isAlive() == True:
+            if neighbor != None and self.isSocialNetworkEntryAlive(neighbor) == True:
                 neighborhood.append(neighbor)
         neighborhood.append(self)
         if newCell == None:
@@ -1471,6 +1472,13 @@ class Agent:
         rankedCells = self.sortCellsByWealth(potentialCells)
         self.updateMovementStats(rankedCells)
         return rankedCells
+
+    def removeDeadSocialNetworkEntries(self):
+        network = self.socialNetwork
+        socialNetworkEntries = [network["father"], network["mother"]] + network["children"] + network["mates"]
+        for entry in socialNetworkEntries:
+            if isinstance(entry, Agent) and entry.isAlive() == False:
+                entry = entry.ID
 
     def removeDebt(self, loan):
         for debtor in self.socialNetwork["debtors"]:
