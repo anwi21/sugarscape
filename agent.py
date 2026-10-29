@@ -14,6 +14,7 @@ class Agent:
         self.aggressionFactor = configuration["aggressionFactor"]
         self.baseInterestRate = configuration["baseInterestRate"]
         self.decisionModel = configuration["decisionModel"]
+        self.decisionModelAgeismFactor = configuration["decisionModelAgeismFactor"]
         self.decisionModelFactor = configuration["decisionModelFactor"]
         self.decisionModelLookaheadDiscount = configuration["decisionModelLookaheadDiscount"]
         self.decisionModelLookaheadFactor = configuration["decisionModelLookaheadFactor"]
@@ -64,7 +65,7 @@ class Agent:
         self.aggressionFactorModifier = 0
         self.alive = True
         self.causeOfDeath = None
-        self.cellsInRange = []
+        self.cellsInRange = {}
         self.childEndowmentHashes = None
         self.conflictHappiness = 0
         self.depressed = False
@@ -307,8 +308,6 @@ class Agent:
         self.movementNeighborhood = []
         self.neighbors = []
         self.neighborhood = []
-        self.movementNeighborhood = []
-        
         for disease in self.diseases:
             diseaseRecord = disease["disease"]
             diseaseRecord.recover(self)
@@ -385,18 +384,16 @@ class Agent:
         livingSons = []
         livingDaughters = []
         livingFriends = []
-
         for child in self.socialNetwork["children"]:
-            if self.isEntryAlive(child) == True:
+            if self.isSocialNetworkEntryAlive(child) == True:
                 livingChildren.append(child)
                 childSex = child.sex
                 if childSex == "male":
                     livingSons.append(child)
                 elif childSex == "female":
                     livingDaughters.append(child)
-
         for friend in self.socialNetwork["friends"]:
-            if self.isEntryAlive(friend["friend"]) == True:
+            if self.isSocialNetworkEntryAlive(friend["friend"]) == True:
                 livingFriends.append(friend["friend"])
 
         if self.inheritancePolicy == "children" and len(livingChildren) > 0:
@@ -569,18 +566,16 @@ class Agent:
                 neighbor.flipTag(position, self.tags[position])
                 neighbor.tribe = neighbor.findTribe()
 
-    def doTimestep(self, timestep):
+    def doTimestep(self, timestep, predeterminedMove=None):
         self.timestep = timestep
         # Prevent dead or already moved agent from moving
         if self.isAlive() == True and self.lastMovedTimestep != self.timestep:
             # Bookkeeping before performing actions
             self.lastSugar = self.sugar
             self.lastSpice = self.spice
-
-            self.pruneDeadRefs()
-
+            self.removeDeadSocialNetworkEntries()
             # Beginning of timestep actions
-            self.moveToBestCell()
+            self.moveToBestCell(predeterminedMove)
             self.updateNeighbors()
             # Middle of timestep actions
             self.collectResourcesAtCell()
@@ -723,7 +718,9 @@ class Agent:
     def findAggression(self):
         return max(0, self.aggressionFactor + self.aggressionFactorModifier)
 
-    def findBestCell(self):
+    def findBestCell(self, predeterminedBestCell=None):
+        if predeterminedBestCell != None:
+            return predeterminedBestCell
         leader = self.cell.environment.sugarscape.agentLeader
         if self.follower == True and leader != None:
             return leader.findBestCellForAgent(self)
@@ -814,6 +811,7 @@ class Agent:
         # These endowments should always come from the same parent for sensible outcomes
         pairedEndowments = {
         "decisionModel": [self.decisionModel, mate.decisionModel],
+        "decisionModelAgeismFactor": [self.decisionModelAgeismFactor, mate.decisionModelAgeismFactor],
         "decisionModelFactor": [self.decisionModelFactor, mate.decisionModelFactor],
         "decisionModelLookaheadDiscount": [self.decisionModelLookaheadDiscount, mate.decisionModelLookaheadDiscount],
         "decisionModelLookaheadFactor": [self.decisionModelLookaheadFactor, mate.decisionModelLookaheadFactor],
@@ -941,13 +939,10 @@ class Agent:
                 emptyCells.append(neighborCell)
         return emptyCells
 
-    def findEntryID(self, entry):
-        return entry.ID if isinstance(entry, Agent) else entry
-
     def findFamilyHappiness(self):
         familyHappiness = 0
         for child in self.socialNetwork["children"]:
-            if self.isEntryAlive(child) == True:
+            if self.isSocialNetworkEntryAlive(child) == True:
                 familyHappiness += self.happinessUnit
                 if child.isSick() == True:
                     familyHappiness -= self.happinessUnit * 0.5
@@ -956,7 +951,7 @@ class Agent:
             else:
                 familyHappiness -= self.happinessUnit
         for mate in self.socialNetwork["mates"]:
-            if self.isEntryAlive(mate) == True:
+            if self.isSocialNetworkEntryAlive(mate) == True:
                 familyHappiness += self.happinessUnit
                 if mate.isSick() == True:
                     familyHappiness -= self.happinessUnit * 0.5
@@ -968,10 +963,22 @@ class Agent:
         potentialNeighbors = cell.findNeighborAgents()
         modifier = 1
         if len(potentialNeighbors) > 0:
+            inGroupAge = 0
             inGroupRace = 0
             inGroupSex = 0
             inGroupTribe = 0
             for neighbor in potentialNeighbors:
+                neighborAge = neighbor.age
+                inRelativeAgeRange = abs(neighborAge - self.age) <= self.cell.environment.inGroupAgeRelativeRange
+                inAbsoluteAgeRanges = False
+                for minAge, maxAge in self.cell.environment.inGroupAgeAbsoluteRanges:
+                    if neighborAge >= minAge and (neighborAge <= maxAge or maxAge == -1):
+                        inAbsoluteAgeRanges = True
+                        break
+                # Neighbor is considered in-group for age if within relative or absolute age range
+                if inRelativeAgeRange or inAbsoluteAgeRanges:
+                    inGroupAge += 1
+
                 neighborRace = neighbor.findRace()
                 if neighborRace == self.findRace() or neighborRace in self.cell.environment.inGroupRaces:
                     inGroupRace += 1
@@ -979,17 +986,21 @@ class Agent:
                     inGroupSex += 1
                 if neighbor.findTribe() == self.findTribe():
                     inGroupTribe += 1
+            
             # Increase value of cell according to proportion of in-group neighbors
+            if self.decisionModelAgeismFactor > 0:
+                ageProportion = inGroupAge / len(potentialNeighbors)
+                modifier *= (1 + (self.decisionModelAgeismFactor * ageProportion) + ((1 - self.decisionModelAgeismFactor) * (1 - ageProportion)))
             if self.decisionModelRacismFactor > 0:
                 raceProportion = inGroupRace / len(potentialNeighbors)
-                # TODO: Detetermine whether 0.5 is the correct scaling factor
-                modifier *= (0.5 + (self.decisionModelRacismFactor * raceProportion) + ((1 - self.decisionModelRacismFactor) * (1 - raceProportion)))
+                # TODO: Detetermine the correct scaling factor
+                modifier *= (1 + (self.decisionModelRacismFactor * raceProportion) + ((1 - self.decisionModelRacismFactor) * (1 - raceProportion)))
             if self.sex in self.cell.environment.sexistGroups and self.decisionModelSexismFactor > 0:
                 sexProportion = inGroupSex / len(potentialNeighbors)
-                modifier *= (0.5 + (self.decisionModelSexismFactor * sexProportion) + ((1 - self.decisionModelSexismFactor) * (1 - sexProportion)))
+                modifier *= (1 + (self.decisionModelSexismFactor * sexProportion) + ((1 - self.decisionModelSexismFactor) * (1 - sexProportion)))
             if self.decisionModelTribalFactor > 0:
                 tribeProportion = inGroupTribe / len(potentialNeighbors)
-                modifier *= (0.5 + (self.decisionModelTribalFactor * tribeProportion) + ((1 - self.decisionModelTribalFactor) * (1 - tribeProportion)))
+                modifier *= (1 + (self.decisionModelTribalFactor * tribeProportion) + ((1 - self.decisionModelTribalFactor) * (1 - tribeProportion)))
         return modifier
 
     def findHammingDistanceInTags(self, neighbor):
@@ -1144,7 +1155,7 @@ class Agent:
     def findValueOfCell(self, cell, preySugar, preySpice):
         # Modify value of cell relative to the metabolism needs of the agent
         value = self.findWelfare(((cell.sugar + preySugar) / (1 + cell.pollution)), ((cell.spice + preySpice) / (1 + cell.pollution)))
-        if self.decisionModelRacismFactor >= 0 or (self.sex in self.cell.environment.sexistGroups and self.decisionModelSexismFactor >= 0) or self.decisionModelTribalFactor >= 0:
+        if self.decisionModelAgeismFactor >= 0 or self.decisionModelRacismFactor >= 0 or (self.sex in self.cell.environment.sexistGroups and self.decisionModelSexismFactor >= 0) or self.decisionModelTribalFactor >= 0:
             # Modify welfare according to group preferences
             value *= self.findGroupBiasCellWelfareModifier(cell)
         return value
@@ -1232,9 +1243,6 @@ class Agent:
             return True
         return False
 
-    def isEntryAlive(self, entry):
-        return isinstance(entry, Agent) and entry.isAlive()
-
     def isFertile(self):
         if self.sugar >= self.startingSugar and self.spice >= self.startingSpice and self.age >= self.fertilityAge and self.age < self.infertilityAge and (self.fertilityFactor + self.fertilityFactorModifier) > 0:
             return True
@@ -1249,7 +1257,11 @@ class Agent:
 
     def isInGroup(self, group, notInGroup=False):
         membership = False
-        if group == self.decisionModel:
+        if "ageRange" in group:
+            ageRangeID = int(re.search(r"ageRange(?P<ID>\d+)", group).group("ID"))
+            minAge, maxAge = self.cell.environment.inGroupAgeAbsoluteRanges[ageRangeID]
+            membership = self.age >= minAge and (self.age <= maxAge or maxAge == -1)
+        elif group == self.decisionModel:
             membership = True
         elif group == "depressed":
             membership = self.depressed
@@ -1260,6 +1272,11 @@ class Agent:
             membership = True if self.sex == "female" else False
         elif group == "male":
             membership = True if self.sex == "male" else False
+        elif "race" in group:
+            raceID = int(re.search(r"race(?P<ID>\d+)", group).group("ID"))
+            membership =  self.race == raceID
+        elif group == "raceInGroup":
+            membership = self.race in self.cell.environment.inGroupRaces
         elif group == "sick":
             membership = self.isSick()
 
@@ -1303,8 +1320,13 @@ class Agent:
             return True
         return False
 
-    def moveToBestCell(self):
-        bestCell = self.findBestCell()
+    def isSocialNetworkEntryAlive(self, entry):
+        if isinstance(entry, Agent):
+            return entry.isAlive()
+        return false
+
+    def moveToBestCell(self, predeterminedMove=None):
+        bestCell = self.findBestCell(predeterminedMove)
         if "all" in self.debug or "agent" in self.debug:
             print(f"Agent {self.ID} moving to ({bestCell.x},{bestCell.y})")
         if self.findAggression() > 0:
@@ -1313,18 +1335,13 @@ class Agent:
             self.gotoCell(bestCell)
 
     def payDebt(self, loan):
-        creditorID = loan["creditor"]
-        creditorRecord = self.socialNetwork.get(creditorID, {})
-        creditor = creditorRecord.get("agent", creditorID)
-
-        if self.isEntryAlive(creditor) == False:
-            if isinstance(creditor, Agent) and creditor.inheritancePolicy != "children":
-                if loan in self.socialNetwork["creditors"]:
-                    self.socialNetwork["creditors"].remove(loan)
+        creditor = loan["creditor"]
+        if self.isSocialNetworkEntryAlive(creditor) == False:
+            if creditor.inheritancePolicy != "children":
+                self.socialNetwork["creditors"].remove(loan)
                 creditor.removeDebt(loan)
             else:
                 self.payDebtToCreditorChildren(loan)
-
         elif self.sugar - loan["sugarLoan"] > 0 and self.spice - loan["spiceLoan"] > 0:
             self.sugar -= loan["sugarLoan"]
             self.spice -= loan["spiceLoan"]
@@ -1350,29 +1367,21 @@ class Agent:
             creditor.addLoanToAgent(self, self.lastMovedTimestep, 0, newSugarLoan, 0, newSpiceLoan, creditor.loanDuration)
 
     def payDebtToCreditorChildren(self, loan):
-        creditorID = loan["creditor"]
-        creditorRecord = self.socialNetwork.get(creditorID, {})
-        creditor = creditorRecord.get("agent", None)
-
+        creditor = loan["creditor"]
+        creditorChildren = creditor.socialNetwork["children"]
         livingCreditorChildren = []
-        if isinstance(creditor, Agent):
-            creditorChildren = creditor.socialNetwork.get("children", [])
-            for child in creditorChildren:
+        for child in creditorChildren:
             # Children who took loans out with their parents should not owe themselves
-                if child != self and self.isEntryAlive(child) == True:
-                    livingCreditorChildren.append(child)
-
+            if child != self and self.isSocialNetworkEntryAlive(child) == True:
+                livingCreditorChildren.append(child)
         numLivingChildren = len(livingCreditorChildren)
         if numLivingChildren > 0:
             sugarRepayment = loan["sugarLoan"] / numLivingChildren
             spiceRepayment = loan["spiceLoan"] / numLivingChildren
             for child in livingCreditorChildren:
                 child.addLoanToAgent(self, self.lastMovedTimestep, 0, sugarRepayment, 0, spiceRepayment, 1)
-
-        if loan in self.socialNetwork["creditors"]:
-            self.socialNetwork["creditors"].remove(loan)
-        if isinstance(creditor, Agent):
-            creditor.removeDebt(loan)
+        self.socialNetwork["creditors"].remove(loan)
+        creditor.removeDebt(loan)
 
     def printCellScores(self, cells):
         i = 0
@@ -1389,26 +1398,6 @@ class Agent:
             cellString = f"({cell['cell'].x},{cell['cell'].y}) [{cell['wealth']},{cell['range']}]"
             print(f"Ethical cell {i + 1}/{len(cells)}: {cellString}")
             i += 1
-
-    def pruneDeadRefs(self):
-        father = self.socialNetwork["father"]
-        if isinstance(father, Agent) and father.isAlive() == False:
-            self.socialNetwork["father"] = father.ID
-        mother = self.socialNetwork["mother"]
-        if isinstance(mother, Agent) and mother.isAlive() == False:
-            self.socialNetwork["mother"] = mother.ID
-        children = self.socialNetwork["children"]
-        for i, child in enumerate(children):
-            if isinstance(child, Agent) and child.isAlive() == False:
-                children[i] = child.ID
-        mates = self.socialNetwork["mates"]
-        for i, mate in enumerate(mates):
-            if isinstance(mate, Agent) and mate.isAlive() == False:
-                mates[i] = mate.ID
-        for friend in self.socialNetwork["friends"]:
-            friendAgent = friend["friend"]
-            if isinstance(friendAgent, Agent) and friendAgent.isAlive() == False:
-                friend["friend"] = friendAgent.ID
 
     def rankCellsInRange(self):
         self.findNeighborhood()
@@ -1442,7 +1431,7 @@ class Agent:
                     riverCost += 1.0
 
             effectiveDistance = travelDistance + riverCost
-            
+
             if effectiveDistance > self.findMovement():
                 continue
 
@@ -1543,17 +1532,17 @@ class Agent:
             self.socialNetwork["friends"].append(neighborEntry)
         else:
             maxHammingDistance = 0
-            maxDistanceFriend = None
+            maxDifferenceFriend = None
             for friend in self.socialNetwork["friends"]:
                 # If already a friend, update Hamming Distance
-                if self.findEntryID(friend["friend"]) == neighborID:
+                if friend["friend"].ID == neighborID:
                     self.socialNetwork["friends"].remove(friend)
                     self.socialNetwork["friends"].append(neighborEntry)
                     return
                 if friend["hammingDistance"] > maxHammingDistance:
                     maxDistanceFriend = friend
                     maxHammingDistance = friend["hammingDistance"]
-            if maxDistanceFriend is not None and maxHammingDistance > neighborHammingDistance:
+            if maxHammingDistance > neighborHammingDistance:
                 self.socialNetwork["friends"].remove(maxDistanceFriend)
                 self.socialNetwork["friends"].append(neighborEntry)
         self.socialNetwork["bestFriend"] = self.findBestFriend()
@@ -1569,10 +1558,10 @@ class Agent:
         self.happiness = self.findHappiness()
 
     def updateLoans(self):
-        for debtor in list(self.socialNetwork["debtors"]):
-            debtorEntry = debtor["debtor"]
+        for debtor in self.socialNetwork["debtors"]:
+            debtorAgent = debtor["debtor"]
             # Cannot collect on debt since debtor is dead
-            if self.isEntryAlive(debtorEntry) == False:
+            if self.isSocialNetworkEntryAlive(debtorAgent) == False:
                 self.socialNetwork["debtors"].remove(debtor)
         for creditor in self.socialNetwork["creditors"]:
             timeRemaining = (self.lastMovedTimestep - creditor["loanOrigin"]) - creditor["loanDuration"]
@@ -1631,8 +1620,6 @@ class Agent:
         neighborsInTribe = 0
         sameRaceNeighbors = 0
         for neighbor in self.neighbors:
-            if not self.isEntryAlive(neighbor):
-                continue
             if neighbor.tribe == self.tribe:
                 neighborsInTribe += 1
             if neighbor.race == self.race:
