@@ -130,13 +130,11 @@ class Cell:
     def findPollutionFlux(self):
 
         config = self.environment.sugarscape.configuration
-        waterPolFlow = config.get("environmentWaterPollutionFlow", True)
-        orientation = config.get("environmentRiverOrientation", "horizontal")
-        slope = config.get("environmentRiverSlope", 0.5)
+        waterPolFlow = config.get("environmentRiverPollutionFlowing", True)
 
         # Unidirectional pollution for river cells based on waterflow and direction
         if waterPolFlow and getattr(self, 'waterCapacity', 0.0) == 1.0:
-            flowRate = config.get("environmentWaterPollutionFlowRate", 0.5)
+            flowRate = config.get("environmentRiverPollutionFlowRate", 0.5)
 
             direction = self.environment.getWaterFlowDirection()
 

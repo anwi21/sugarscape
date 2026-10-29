@@ -97,6 +97,8 @@
         "environmentQuadrantSizeFactor": 1,
         "environmentRiverWidthWet": 4,
         "environmentRiverWidthDry": 2,
+        "environmentRiverPollutionFlowing": true,
+        "environmentRiverPollutionFlowRate": 0.5,
         "environmentSeasonalGrowbackDelay": 2,
         "environmentSeasonInterval": 50,
         "environmentSexistGroups": ["female", "male"],
