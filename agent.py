@@ -1325,6 +1325,10 @@ class Agent:
 
     def moveToBestCell(self, predeterminedMove=None):
         bestCell = self.findBestCell(predeterminedMove)
+        #Ensuring an agent can't move to cell with a creature
+        if bestCell is not None and bestCell.creature != None:
+            potentialCells = self.rankCellsInRange()
+            bestCell = potentialCells[0]["cell"]
         if "all" in self.debug or "agent" in self.debug:
             print(f"Agent {self.ID} moving to ({bestCell.x},{bestCell.y})")
         if self.findAggression() > 0:
@@ -1416,6 +1420,10 @@ class Agent:
 
         self.tribe = self.findTribe()
         for cell, travelDistance in cellsInRange:
+            #Avoid cells with creatures
+            if cell.creature != None:
+                continue
+
             # Avoid attacking agents ineligible to attack
             prey = cell.agent
             if cell.isOccupied() and self.isNeighborValidPrey(prey) == False:
