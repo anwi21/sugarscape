@@ -296,7 +296,9 @@ class Leader(agent.Agent):
         cellRanges = []
         counters = []
         for agent in agents:
-            cellsInRange = list(agent.cellsInRange.keys()) if len(agent.cellsInRange) > 0 else [agent.cell]
+            cellsInRange = [cell for cell in agent.cellsInRange.keys() if cell.creature is None]
+            if len(cellsInRange) == 0:
+                cellsInRange = [agent.cell]
             cellRanges.append(len(cellsInRange) - 1)
             counters.append(0)
 
@@ -323,7 +325,9 @@ class Leader(agent.Agent):
                 if agent.isAlive() == False:
                     continue
                 agentPremoveIndex = counters[counterIndex]
-                cellsInRange = list(agent.cellsInRange.keys()) if len(agent.cellsInRange) > 0 else [agent.cell]
+                cellsInRange = [cell for cell in agent.cellsInRange.keys() if cell.creature is None]
+                if len(cellsInRange) == 0:
+                    cellsInRange = [agent.cell]
                 premove = cellsInRange[agentPremoveIndex]
                 agent.doTimestep(futurescape.timestep, premove)
                 currCell = agent.cell
