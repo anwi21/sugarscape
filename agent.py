@@ -935,7 +935,8 @@ class Agent:
         emptyCells = []
         neighborCells = self.cell.neighbors.values()
         for neighborCell in neighborCells:
-            if neighborCell.agent == None:
+            #Cell must not contain agent or creature
+            if neighborCell.agent == None and neighborCell.creature == None:
                 emptyCells.append(neighborCell)
         return emptyCells
 
