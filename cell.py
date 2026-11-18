@@ -9,6 +9,7 @@ class Cell:
         self.maxSpice = maxSpice
 
         self.agent = None
+        self.creature = None
         self.hemisphere = "north" if self.x >= self.environment.equator else "south"
         self.neighbors = {}
         self.pollution = 0
