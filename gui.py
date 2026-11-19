@@ -686,6 +686,9 @@ class GUI:
         return hexval
 
     def lookupFillColor(self, cell):
+        if cell.creature is not None:
+            return "#FFB6C1"  # baby pink for cows!!!
+
         if self.activeNetwork.get() != "None":
             return self.lookupNetworkColor(cell)
 
