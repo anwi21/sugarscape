@@ -139,6 +139,17 @@ class Sugarscape:
         self.bornAgents.append(agent)
         self.agents.append(agent)
 
+    def addCreature(self, cell):
+        if cell is None or cell.agent is not None or cell.creature is not None:
+            return
+        
+        creatureID = self.nextCreatureID
+        self.nextCreatureID += 1
+
+        newCreature = creature.Creature(creatureID, cell, self.configuration)
+        cell.creature = newCreature
+        self.creatures.append(newCreature)
+
     def addRemainingDiseases(self):
         infectedDiseases = []
         for disease in self.remainingDiseases:
