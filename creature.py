@@ -28,3 +28,8 @@ class Creature:
 
 
         return len(creatureNeighbors)
+
+    def shouldSurvive(self):
+        neighborCount = self.findCreatureNeighbors()
+        # Creatures only survive if the neighbor count is 2-3
+        return neighborCount == 2 or neighborCount == 3
