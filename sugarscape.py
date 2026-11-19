@@ -400,6 +400,29 @@ class Sugarscape:
         self.environment.findCellNeighbors()
         self.environment.findCellRanges()
 
+    def doCreatureTimestep(self):
+        deadCreatures = []
+        for creature in self.creatures:
+            if creature.shouldSurvive() == False:
+                deadCreatures.append(creature)
+
+        birthCells = []
+        if len(self.creatures) > 0:
+            for i in range(self.environment.width):
+                for j in range(self.environment.height):
+                    cell = self.environment.grid[i][j]
+                    if self.creatures[0].canReproduce(cell):
+                        birthCells.append(cell)
+
+        # Remove creatures that did not survive
+        for creature in deadCreatures:
+            creature.cell.creature = None
+            self.creatures.remove(creature)
+
+        # Create new creatures in eligible cells
+        for cell in birthCells:
+            self.addCreature(cell)
+            
     def doTimestep(self):
         if self.timestep >= self.maxTimestep:
             self.toggleEnd()
