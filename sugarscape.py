@@ -422,7 +422,7 @@ class Sugarscape:
         # Create new creatures in eligible cells
         for cell in birthCells:
             self.addCreature(cell)
-            
+
     def doTimestep(self):
         if self.timestep >= self.maxTimestep:
             self.toggleEnd()
@@ -434,6 +434,7 @@ class Sugarscape:
             self.toggleEnd()
         else:
             self.environment.doTimestep(self.timestep)
+            self.doCreatureTimestep()
             random.shuffle(self.agents)
             self.addRemainingDiseases()
             if self.agentLeader != None:
