@@ -125,6 +125,7 @@
         "screenshots": false,
         "seed": -1,
         "startingAgents": 250,
+        "startingCreatures": 100,
         "startingDiseases": 50,
         "startingDiseasesPerAgent": [0, 0],
         "timesteps": 1000
