@@ -292,6 +292,20 @@ class Sugarscape:
         elif mode == "maximumSugar":
             cell.maxSugar = min(max(0, (cell.maxSugar + delta)), self.environment.globalMaxSugar)
 
+    def configureCreatures(self, numCreatures):
+        emptyCells = []
+
+        for i in range(self.environment.width):
+            for j in range(self.environment.height):
+                cell = self.environment.grid[i][j]
+                if cell.agent is None and cell.creature is None:
+                    emptyCells.append(cell)
+
+        random.shuffle(emptyCells)
+
+        for cell in emptyCells[:numCreatures]:
+            self.addCreature(cell)
+
     def configureDepression(self):
         if self.depression == True:
             self.depression = condition.Depression()
