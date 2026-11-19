@@ -2001,6 +2001,7 @@ if __name__ == "__main__":
                      "screenshots": False,
                      "seed": -1,
                      "startingAgents": 250,
+                     "startingCreatures": 0,
                      "startingDiseases": 0,
                      "startingDiseasesPerAgent": [0, 0],
                      "timesteps": 200
