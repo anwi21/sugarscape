@@ -4,8 +4,9 @@ class Creature:
         self.cell = cell
         self.debug = cell.environment.sugarscape.debug
 
-    def findCreatureNeighbors(self):
-        cell = self.cell
+    def findCreatureNeighbors(self, cell=None):
+        if cell is None:
+            cell = self.cell
 
         north = cell.findNorthNeighbor()
         south = cell.findSouthNeighbor()
@@ -31,5 +32,14 @@ class Creature:
 
     def shouldSurvive(self):
         neighborCount = self.findCreatureNeighbors()
+        
         # Creatures only survive if the neighbor count is 2-3
         return neighborCount == 2 or neighborCount == 3
+
+    def canReproduce(self, cell):
+        # Creatures can only reproduce into empty cells
+        if cell.agent is not None or cell.creature is not None:
+            return False
+
+        # Exactly 3 neighboring creatures produces a new creature
+        return self.findCreatureNeighbors(cell) == 3
