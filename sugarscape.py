@@ -3,6 +3,7 @@
 import agent
 import cell
 import condition
+import creature
 import environment
 import ethics
 
@@ -23,6 +24,7 @@ class Sugarscape:
         self.maxTimestep = configuration["timesteps"]
         self.timestep = 0
         self.nextAgentID = 0
+        self.nextCreatureID = 0
         self.nextDiseaseID = 0
         environmentConfiguration = {"equator": configuration["environmentEquator"],
                                     "globalMaxSpice": configuration["environmentMaxSpice"],
@@ -59,6 +61,7 @@ class Sugarscape:
         self.agentEndowments = []
         self.agentLeader = None
         self.agents = []
+        self.creatures = []
         self.bornAgents = []
         self.deadAgents = []
         self.depression = True if configuration["agentDepressionPercentage"] > 0 else False
