@@ -75,6 +75,7 @@ class Sugarscape:
         self.agentRuntimeStats = []
         self.configureDepression()
         self.configureAgents(configuration["startingAgents"])
+        self.configureCreatures(configuration.get("startingCreatures", 0))
         self.configureDiseases(configuration["startingDiseases"], configuration["diseaseList"])
         self.gui = gui.GUI(self, self.configuration["interfaceHeight"], self.configuration["interfaceWidth"]) if configuration["headlessMode"] == False else None
         self.run = False # Simulation start flag
